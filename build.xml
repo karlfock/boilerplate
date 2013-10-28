@@ -1,0 +1,71 @@
+
+<project>
+    <loadproperties srcfile="src/test/resources/jshint/jshint.properties" />
+    
+    <target name="jshint">
+        <apply dir="src/test/resources/jshint" executable="java" parallel="true" failonerror="false"  outputproperty="testOutput" resultproperty="jsHintExitCode">
+            <fileset dir="${src.path}" includes="**/*.js" /> 
+            <arg line="-jar ${rhino.path}"/>
+            <arg line="jshintRunner.js" />
+        </apply>
+    
+            <!-- Create condition for fail -->
+        <condition property="failedJsHint" >
+            <not>
+                <equals arg1="${jsHintExitCode}" arg2="0" />
+            </not>
+        </condition>
+
+        <!-- Fail if there are failed tests -->
+         <!--
+         <fail if="failedJsHint">Error was found during jshint.</fail>
+-->
+
+         <echo file="output.txt" append="false">
+            ${testOutput}
+        </echo>
+
+
+        <!-- SPLITWITHTHIS -->
+        <script language="javascript"><![CDATA[
+            importPackage(java.lang, java.util, java.io);
+            importPackage(Packages.org.apache.tools.ant);
+            importPackage(Packages.org.apache.tools.ant.taskdefs);
+            //System.out.println("Try to print Ant variable: " + testOutput);
+
+            var lines = testOutput.split("\n");
+
+            for(var i=0; i<lines.length; i++) {
+                var fileWithError = lines[i].split("Errors in")[1];
+                if(fileWithError) {
+                    System.out.println("Error in file: " + fileWithError);
+                }
+            }
+
+        ]]></script>
+
+
+    </target>
+
+    <target name="runQunitTests">
+        
+        <!-- All the output from phantomjs, i.e. console.log will be in testOutput -->
+        <exec executable="phantomjs" outputproperty="testOutput" resultproperty="numFailedTests">
+            <arg value="src/test/js/dummy.js" />
+        </exec>
+
+        <echo message="returned from phantomjs: ${testOutput}" />
+        <echo message="number of failed tests: ${numFailedTests}" />
+    
+        <!-- Create condition for fail -->
+        <condition property="failedTests" >
+            <not>
+                <equals arg1="${numFailedTests}" arg2="0" />
+            </not>
+        </condition>
+
+        <!-- Fail if there are failed tests -->
+         <fail if="failedTests">Some js tests failed.</fail>
+    </target>
+
+</project>
